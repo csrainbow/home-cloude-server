@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 🔄 PENYESUAIAN 1: Mengubah judul tab browser -->
+    <title>HOME-CLOUDE | Self-Hosted Cloud Storage</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        
+        /* 🖤 PALET WARNA IMMICH STYLE (TRUE DARK MODE ASLI) */
+        body { background-color: #0b0c0e; color: #f3f4f6; overflow-x: hidden; }
+        
+        /* Form Auth Screen */
+        .auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0b0c0e; padding: 20px; }
+        .auth-card { background: #14171c; padding: 32px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); width: 100%; max-width: 380px; text-align: center; border: 1px solid #232830; }
+        .auth-card h2 { margin-bottom: 24px; color: #ffffff; font-weight: 500; font-size: 22px; }
+        .auth-card input { width: 100%; padding: 12px 16px; margin-bottom: 16px; background: #0b0c0e; border: 1px solid #2f3642; border-radius: 8px; font-size: 15px; color: white; outline: none; }
+        .auth-card input:focus { border-color: #3b82f6; }
+        .auth-card button { width: 100%; background: #3b82f6; color: white; border: none; padding: 12px; border-radius: 24px; font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 12px; }
+        .auth-card button:hover { background: #2563eb; }
+        .auth-card p { font-size: 14px; color: #9ca3af; cursor: pointer; }
+        .auth-card p span { color: #3b82f6; font-weight: 500; }
+
+        /* Main Workspace Screen */
+        #mainApp { display: none; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Header Premium Dark */
+        header { background: #0b0c0e; display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; border-bottom: 1px solid #1f242e; position: sticky; top: 0; z-index: 100; }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .menu-toggle { background: none; border: none; font-size: 20px; cursor: pointer; color: #9ca3af; padding: 4px; }
+        
+        /* 🎨 PENYESUAIAN GAYA UNTUK LOGO IMAGE HOME-CLOUDE */
+        .brand-logo { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            height: 36px; /* Mengunci tinggi area logo di header */
+        }
+        .brand-logo img {
+            height: 100%; /* Memaksa gambar logo menyesuaikan tinggi header secara proposional */
+            width: auto;
+            object-fit: contain;
+        }
+        /* 🔄 PENYESUAIAN 2: Menampilkan teks versi v1.0 dengan warna abu-abu transparan elegan */
+        .brand-logo span {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .upload-btn { background-color: #1f242e; color: #ffffff; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 500; border: 1px solid #2f3642; font-size: 14px; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
+        .upload-btn:hover { background: #2f3642; border-color: #3b82f6; }
+        .logout-btn { background: none; border: 1px solid #2f3642; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #9ca3af; }
+        .logout-btn:hover { background: #1f242e; color: white; }
+        #fileInput { display: none; }
+
+        /* Tata Letak Utama */
+        .app-container { display: flex; flex: 1; height: calc(100vh - 65px); position: relative; }
+        
+        /* Sidebar Menu Kiri (Immich Layout) */
+        aside { width: 260px; background: #0b0c0e; padding: 16px 12px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid #1f242e; z-index: 90; }
+        .nav-list { list-style: none; }
+        .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; color: #9ca3af; font-size: 14px; font-weight: 500; border-radius: 8px; cursor: pointer; margin-bottom: 4px; transition: all 0.2s; }
+        .nav-item:hover, .nav-item.active { background-color: #14171c; color: #ffffff; }
+        .nav-item.active { border-left: 3px solid #3b82f6; border-radius: 0 8px 8px 0; }
+        
+        /* Widget Info Penyimpanan Realistis */
+        .sidebar-storage { padding: 16px 12px; background: #14171c; border-radius: 12px; border: 1px solid #1f242e; font-size: 13px; margin-top: 15px; }
+        .storage-title { color: #9ca3af; margin-bottom: 6px; font-weight: 500; }
+        .storage-bar { width: 100%; height: 6px; background: #2f3642; border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+        .storage-progress { width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #ec4899); transition: width 0.5s ease; }
+        .storage-add-btn { background: #1f242e; border: 1px dashed #2f3642; color: #9ca3af; width: 100%; padding: 8px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: 0.2s; font-weight: 500; }
+        .storage-add-btn:hover { color: white; border-color: #3b82f6; }
+        /* Area Konten Utama */
+        main { flex: 1; padding: 24px; overflow-y: auto; background: #0b0c0e; }
+        .date-section { margin-bottom: 30px; }
+        .date-header { font-size: 14px; font-weight: 600; color: #9ca3af; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* 🖼️ GRID FOTO & VIDEO FLEKSIBEL MODAL */
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+        .media-card { background: #14171c; overflow: hidden; position: relative; aspect-ratio: 1/1; cursor: pointer; border-radius: 4px; width: 100%; transition: transform 0.15s; }
+        .media-card:hover { transform: scale(1.02); z-index: 5; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .media-card img, .media-card video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .media-card video { background: black; }
+        
+        /* ❌ TOMBOL HAPUS TUNGGAL OVERLAY DI ATAS FOTO */
+        .grid-delete-btn { position: absolute; top: 8px; right: 8px; background: rgba(234, 67, 53, 0.9); color: white; border: none; border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-weight: bold; display: none; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); z-index: 10; }
+        .grid-delete-btn:hover { background: #dc2626; transform: scale(1.1); }
+        .media-card:hover .grid-delete-btn { display: flex; }
+
+        /* 🔵 CHECKBOX OVERLAY SELECTION MODE DI ATAS FOTO */
+        .gallery-action-header { display: none; justify-content: space-between; align-items: center; padding: 14px 24px; background: #14171c; border-bottom: 1px solid #1f242e; position: sticky; top: 0; z-index: 95; animation: fadeIn 0.2s ease; }
+        .gallery-checkbox { position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; cursor: pointer; z-index: 12; accent-color: #3b82f6; opacity: 0; transition: opacity 0.2s; }
+        .media-card:hover .gallery-checkbox, .gallery-checkbox:checked, body.select-mode .gallery-checkbox { opacity: 1; }
+
+        /* Modul Berkas Dokumen */
+        .file-list { display: flex; flex-direction: column; gap: 8px; max-width: 800px; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #14171c; border: 1px solid #1f242e; border-radius: 8px; cursor: pointer; }
+        .file-info { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 500; color: #ffffff; }
+
+        /* Lightbox Preview */
+        .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 200; display: none; justify-content: center; align-items: center; }
+        .lightbox-content { max-width: 95%; max-height: 85%; object-fit: contain; }
+        .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; background: none; border: none; }
+        .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); color: white; font-size: 40px; background: none; border: none; cursor: pointer; padding: 20px; user-select: none; }
+        .nav-prev { left: 10px; }
+        .nav-next { right: 10px; }
+        .lightbox-toolbar { position: absolute; bottom: 20px; display: flex; gap: 20px; }
+        .action-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        .action-btn.delete { background: rgba(234, 67, 53, 0.9); }
+
+        /* 🔔 NOTIFIKASI POP-UP TOAST PREMIUM STYLE */
+        .toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+        .toast-box { background: #14171c; color: #ffffff; padding: 14px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 10px; min-width: 250px; border: 1px solid #1f242e; animation: slideIn 0.3s ease-out forwards; }
+        .toast-box.success { border-left: 4px solid #22c55e; }
+        .toast-box.info { border-left: 4px solid #3b82f6; }
+        .toast-box.error { border-left: 4px solid #ef4444; }
+
+        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { transform: translateX(0); opacity: 1; } }
+
+        /* 📱 MOBILE VIEW OPTIMIZATION */
+        @media (max-width: 768px) {
+            header { padding: 12px 16px; }
+            .brand-logo { font-size: 18px; }
+            .brand-logo span { display: none; }
+            .upload-btn span, .logout-btn { display: none; }
+            aside { position: absolute; left: -260px; top: 0; height: 100%; background: #0b0c0e; box-shadow: 8px 0 32px rgba(0,0,0,0.5); transition: left 0.3s; }
+            aside.open { left: 0; }
+            main { padding: 12px; }
+            .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 3px; }
+            .media-card { border-radius: 4px; max-width: none; }
+            .grid-delete-btn { display: flex; width: 24px; height: 24px; font-size: 12px; top: 4px; right: 4px; }
+        }
+        
+        /* 📈 PROGRESS BAR DI DALAM POP-UP TOAST */
+        .toast-progress-container {
+            width: 100%;
+            background: #2f3642;
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+            display: none;
+        }
+        .toast-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #ec4899);
+            transition: width 0.1s linear;
+        }
+    </style>
+
+       <!-- Memanggil berkas JSZip murni dari penyimpanan internal STB -->
+    <script src="/jszip.min.js"></script>
+</head>
+<body>
+
+    <!-- Wadah penampung seluruh pop-up toast notifikasi -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- LAYER SATU: HALAMAN AUTH (LOGIN & REGISTER) -->
+    <div id="authScreen" class="auth-container">
+        <div class="auth-card">
+            <h2 id="authTitle">Masuk ke HOME-CLOUDE</h2>
+            <input type="text" id="usernameInput" placeholder="Nama Pengguna (Username)">
+            <input type="password" id="passwordInput" placeholder="Kata Sandi (Password)">
+            <button id="authSubmitBtn" onclick="handleAuth()">Masuk</button>
+            <p id="authToggle" onclick="toggleAuthMode()">Belum punya akun? <span>Daftar Baru</span></p>
+        </div>
+    </div>
+
+    <!-- LAYER DUA: HALAMAN UTAMA APLIKASI (SIDEBAR & DASHBOARD GALERI) -->
+    <div id="mainApp">
+        <header>
+            <div class="header-left">
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="brand-logo">
+                    <img src="/logo.png" alt="HOME-CLOUDE Logo">
+                    <span>v1.0</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <label for="fileInput" class="upload-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    <span>Upload</span>
+                </label>
+                <input type="file" id="fileInput" accept="*/*" multiple>
+                <button class="logout-btn" onclick="handleLogout()">Keluar</button>
+            </div>
+        </header>
+
+        <div class="app-container">
+            <!-- SIDEBAR NAVIGASI IMMICH TRUE LOOK -->
+            <aside id="sidebar">
+                <div>
+                    <!-- MENU NAVIGASI KATEGORI -->
+                    <ul class="nav-list">
+                        <li class="nav-item active" onclick="switchTab('all', this)">🖼️ Photos</li>
+                        <li class="nav-item" onclick="switchTab('video', this)">🎬 Videos</li>
+                        <li class="nav-item" onclick="switchTab('file', this)">📂 Library Documents</li>
+                    </ul>
+                    
+                    <!-- METRIC PENYIMPANAN DI BAWAH LIBRARY -->
+                    <div class="sidebar-storage" style="padding: 16px 12px; margin-top: 10px;">
+                        <div class="storage-title">Storage Space</div>
+                        <div class="storage-bar">
+                            <div id="storageBarProgress" class="storage-progress" style="width: 0%;"></div>
+                        </div>
+                        <div id="storageTextProgress" style="color: #9ca3af; font-size: 11px; margin-bottom: 12px;">
+                            Loading storage info...
+                        </div>
+                        <button class="storage-add-btn" onclick="addStorage()">+ Add External Disk</button>
+                    </div>
+                </div>
+                
+                <!-- STATUS SERVER ONLINE DI BAGIAN PALING BAWAH SIDEBAR -->
+                <div class="sidebar-status-footer" style="padding: 12px; border-top: 1px solid #1f242e; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #22c55e;"></span>
+                        <span style="color: #e5e7eb; font-weight: 500;">Server Online</span>
+                    </div>
+                    <div style="color: #6b7280; font-size: 11px;">v1.0.0</div>
+                </div>
+            </aside>
+
+            <!-- AREA UTAMA PENAMPIL KONTEN -->
+            <main id="galleryWrapper" style="padding:0;">
+                <!-- 🔄 PENYESUAIAN: Pembersihan baris komentar ganda pembentuk panel laci atas -->
+                <div id="galleryActionHeader" class="gallery-action-header">
+                    <span style="font-size: 14px; color: #9ca3af;"><b id="gallerySelectedCount">0</b> media terpilih</span>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="action-btn" onclick="downloadSelectedGalleryFiles()" style="background: #3b82f6; padding: 8px 16px; font-size: 13px; border-radius: 6px; font-weight: 500; border: none; color: white; cursor: pointer;">Unduh Berkas</button>
+                        <button class="action-btn delete" onclick="deleteSelectedGalleryFiles()" style="padding: 8px 16px; font-size: 13px; border-radius: 6px; font-weight: 500;">Hapus Massal</button>
+                    </div>
+                </div>
+              
+                <div style="padding: 24px;">
+                    <div id="userGreeting" style="font-size: 13px; color: #6b7280; margin-bottom: 20px; font-weight: 500; text-transform: uppercase;"></div>
+                    <div id="mainContainer"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+
+ <!-- ELEMEN LIGHTBOX PREVIEW SYSTEM -->
+    <div id="lightbox" class="lightbox">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <button class="lightbox-nav nav-prev" onclick="changeMedia(-1)">❮</button>
+        <div id="lightboxMediaContainer" style="display:contents;"></div>
+        <button class="lightbox-nav nav-next" onclick="changeMedia(1)">❯</button>
+        <div class="lightbox-toolbar">
+            <button class="action-btn delete" id="lightboxDeleteBtn">Hapus Berkas</button>
+        </div>
+    </div>
+    <script>
+        const API_BASE = `${window.location.protocol}//${window.location.hostname}:3000`;
+        let isLoginMode = true;
+        let allMediaFiles = [];
+        let currentMediaIndex = 0;
+        let currentTab = 'all';
+
+        // 🟢 PROSES PENGECEKAN SESI SAAT HALAMAN DIBUKA
+        document.addEventListener("DOMContentLoaded", () => {
+            const token = localStorage.getItem('cloud_token');
+            const user = localStorage.getItem('cloud_user');
+            if (token && user) { showApp(user); }
+        });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // 🟢 FUNGSI PENUKAR SCREEN LOGIN & DAFTAR (FIXED BINDING)
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').innerText = isLoginMode ? 'Masuk ke HOME-CLOUDE' : 'Buat Akun Baru';
+            document.getElementById('authSubmitBtn').innerText = isLoginMode ? 'Masuk' : 'Daftar';
+            document.getElementById('authToggle').innerHTML = isLoginMode ? 'Belum punya akun? <span>Daftar Baru</span>' : 'Sudah punya akun? <span>Masuk</span>';
+        }
+
+        // 🟢 LOGIKA PROSES LOGIN DAN DAFTAR AKUN KE BACKEND
+        async function handleAuth() {
+            const username = document.getElementById('usernameInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
+            if(!username || !password) return alert('Harap isi semua kolom!');
+            const urlPath = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+
+            try {
+                const response = await fetch(`${API_BASE}${urlPath}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Terjadi kesalahan sistem.');
+
+                if (isLoginMode) {
+                    localStorage.setItem('cloud_token', data.token);
+                    localStorage.setItem('cloud_user', data.username);
+                    showApp(data.username);
+                } else {
+                    alert('Registrasi sukses! Silakan login masuk.');
+                    toggleAuthMode();
+                }
+            } catch (err) { alert(err.message); }
+        }
+
+        function showApp(username) {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'flex';
+            document.getElementById('userGreeting').innerText = `Library milik ${username}`;
+            loadGallery();
+            if (typeof updateStorageInfo === 'function') updateStorageInfo();
+        }
+
+        function handleLogout() { localStorage.clear(); window.location.reload(); }
+        function getAuthHeaders() { return { 'Authorization': `Bearer ${localStorage.getItem('cloud_token')}` }; }
+
+        function formatSectionDate(timestamp) {
+            const date = new Date(parseInt(timestamp));
+            const hariIni = new Date();
+            const kemarin = new Date();
+            kemarin.setDate(hariIni.getDate() - 1);
+            if(date.toDateString() === hariIni.toDateString()) return 'Hari Ini';
+            if(date.toDateString() === kemarin.toDateString()) return 'Kemarin';
+            return date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function switchTab(tabName, element) {
+            currentTab = tabName;
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+            
+            const galleryHeader = document.getElementById('galleryActionHeader');
+            if(galleryHeader) galleryHeader.style.display = 'none';
+            document.body.classList.remove('select-mode');
+
+            if(window.innerWidth <= 768) toggleSidebar();
+            loadGallery();
+        }
+
+                function addStorage() {
+            const path = prompt("Masukkan lokasi mount point Harddisk baru Anda:\nContoh: /media/devmon/sdb1");
+            if(path) alert("Permintaan terkirim! Server sedang memetakan drive: " + path);
+        }
+
+        function showToast(message, type = 'info', id = null) {
+            const container = document.getElementById('toastContainer');
+            if(!container) return null;
+            let toast = id ? document.getElementById(id) : null;
+            if (!toast) {
+                toast = document.createElement('div');
+                if (id) toast.id = id;
+                container.appendChild(toast);
+            }
+            toast.className = `toast-box ${type}`;
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '❌';
+            toast.innerHTML = `<div style="display:flex;align-items:center;gap:10px;width:100%;"><span>${icon}</span><div style="flex:1;"><div class="toast-msg-text">${message}</div><div class="toast-progress-container" id="${id ? id + '-bar-box' : ''}"><div class="toast-progress-fill" id="${id ? id + '-fill' : ''}"></div></div></div></div>`;
+            if (type !== 'info') {
+                setTimeout(() => {
+                    toast.style.animation = 'slideOut 0.3s ease-in forwards';
+                    setTimeout(() => { toast.remove(); }, 300);
+                }, 3500);
+            }
+            return toast;
+        }
+
+        async function updateStorageInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/api/media/storage-space`, { headers: getAuthHeaders() });
+                if (!response.ok) return;
+                const data = await response.json();
+                const progressIndicator = document.getElementById('storageBarProgress');
+                const textIndicator = document.getElementById('storageTextProgress');
+                if(progressIndicator) progressIndicator.style.width = `${data.percent}%`;
+                if(textIndicator) textIndicator.innerText = `${data.used} GB of ${data.total} GB used`;
+            } catch (err) { console.error(err); }
+        }
+
+        // 🟢 PEMUATAN DAFTAR BERKAS UTAMA DARI BACKEND
+        async function loadGallery() {
+            try {
+                const response = await fetch(`${API_BASE}/api/media/list`, { headers: getAuthHeaders() });
+                if(response.status === 401 || response.status === 403) return handleLogout();
+                
+                let files = await response.json();
+                const mainContainer = document.getElementById('mainContainer');
+                mainContainer.innerHTML = '';
+                allMediaFiles = [];
+
+                if (currentTab === 'video') {
+                    files = files.filter(f => f.name.match(/\.(mp4|webm|ogg|mov)$/i));
+                } else if (currentTab === 'file') {
+                    files = files.filter(f => !f.name.match(/\.(mp4|webm|ogg|mov|jpg|jpeg|png|gif|webp)$/i));
+                } else {
+                    files = files.filter(f => f.name.match(/\.(mp4|webm|ogg|mov|jpg|jpeg|png|gif|webp)$/i));
+                }
+
+                if (files.length === 0) {
+                    mainContainer.innerHTML = '<p style="text-align: center; color: #6b7280; margin-top: 40px; font-size: 14px;">No items found in this section.</p>';
+                    return;
+                }
+
+                // --- TAB LAYOUT PERPUSTAKAAN DOKUMEN ---
+                if (currentTab === 'file') {
+                    const actionHeader = document.createElement('div');
+                    actionHeader.id = 'fileActionHeader';
+                    actionHeader.style = 'display: none; justify-content: space-between; align-items: center; padding: 10px 16px; background: #1e293b; border-radius: 8px; margin-bottom: 12px; border: 1px solid #334155;';
+                    actionHeader.innerHTML = `
+                        <span style="font-size: 13px; color: #9ca3af;"><b id="selectedCount">0</b> berkas dipilih</span>
+                        <button class="action-btn delete" onclick="deleteSelectedFiles()" style="padding: 6px 14px; font-size: 13px; border-radius: 6px;">Hapus Terpilih</button>
+                    `;
+                    mainContainer.appendChild(actionHeader);
+
+                    const fileWrapper = document.createElement('div');
+                    fileWrapper.className = 'file-list';
+                    
+                    files.forEach(file => {
+                        const fileUrl = `${API_BASE}${file.url}`;
+                        const cleanName = file.name;
+                        const displaySize = file.size ? formatFileSize(file.size) : '0 Bytes';
+
+                        const item = document.createElement('div');
+                        item.className = 'file-item';
+                        item.style = 'display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #14171c; border: 1px solid #1f242e; border-radius: 8px; margin-bottom: 8px;';
+                        
+                        item.innerHTML = `
+                            <div class="file-info" style="display: flex; align-items: center; gap: 14px;">
+                                <input type="checkbox" class="file-checkbox" data-filename="${file.name}" data-path="${file.relativePath}" onchange="handleFileCheckboxChange()" style="width: 16px; height: 16px; cursor: pointer;">
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <span style="font-size: 14px; font-weight: 500; color: #ffffff; cursor: pointer;" onclick="window.open('${fileUrl}', '_blank'); if(typeof showToast === 'function') showToast('Mengunduh ${cleanName}...', 'info');">📄 ${cleanName}</span>
+                                    <span style="font-size: 11px; color: #6b7280; font-weight: 400;">Kapasitas: ${displaySize}</span>
+                                </div>
+                            </div>
+                            <span style="color:#3b82f6; font-size:13px; font-weight: 500; cursor: pointer;" onclick="window.open('${fileUrl}', '_blank'); if(typeof showToast === 'function') showToast('Mengunduh ${cleanName}...', 'info');">Download</span>
+                        `;
+                        fileWrapper.appendChild(item);
+                    });
+                    mainContainer.appendChild(fileWrapper);
+                    return;
+                }
+
+// --- TAB LAYOUT PERPUSTAKAAN DOKUMEN ---
+                if (currentTab === 'file') {
+                    const actionHeader = document.createElement('div');
+                    actionHeader.id = 'fileActionHeader';
+                    actionHeader.style = 'display: none; justify-content: space-between; align-items: center; padding: 10px 16px; background: #1e293b; border-radius: 8px; margin-bottom: 12px; border: 1px solid #334155;';
+                    actionHeader.innerHTML = `
+                        <span style="font-size: 13px; color: #9ca3af;"><b id="selectedCount">0</b> berkas dipilih</span>
+                        <button class="action-btn delete" onclick="deleteSelectedFiles()" style="padding: 6px 14px; font-size: 13px; border-radius: 6px;">Hapus Terpilih</button>
+                    `;
+                    mainContainer.appendChild(actionHeader);
+
+                    const fileWrapper = document.createElement('div');
+                    fileWrapper.className = 'file-list';
+                    
+                    files.forEach(file => {
+                        const fileUrl = `${API_BASE}${file.url}`;
+                        const cleanName = file.name;
+                        const displaySize = file.size ? formatFileSize(file.size) : '0 Bytes';
+
+                        const item = document.createElement('div');
+                        item.className = 'file-item';
+                        item.style = 'display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #14171c; border: 1px solid #1f242e; border-radius: 8px; margin-bottom: 8px;';
+                        
+                        item.innerHTML = `
+                            <div class="file-info" style="display: flex; align-items: center; gap: 14px;">
+                                <input type="checkbox" class="file-checkbox" data-filename="${file.name}" data-path="${file.relativePath}" onchange="handleFileCheckboxChange()" style="width: 16px; height: 16px; cursor: pointer;">
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <span style="font-size: 14px; font-weight: 500; color: #ffffff; cursor: pointer;" onclick="window.open('${fileUrl}', '_blank'); if(typeof showToast === 'function') showToast('Mengunduh ${cleanName}...', 'info');">📄 ${cleanName}</span>
+                                    <span style="font-size: 11px; color: #6b7280; font-weight: 400;">Kapasitas: ${displaySize}</span>
+                                </div>
+                            </div>
+                            <span style="color:#3b82f6; font-size:13px; font-weight: 500; cursor: pointer;" onclick="window.open('${fileUrl}', '_blank'); if(typeof showToast === 'function') showToast('Mengunduh ${cleanName}...', 'info');">Download</span>
+                        `;
+                        fileWrapper.appendChild(item);
+                    });
+                    mainContainer.appendChild(fileWrapper);
+                    return;
+                }
+
+                // --- TAB LAYOUT MEDIA GRID (PHOTOS & VIDEOS) ---
+                const groups = {};
+                files.forEach(file => {
+                    const timestamp = parseInt(file.birthtime);
+                    
+                    if(!isNaN(timestamp)) {
+                        file.timestamp = timestamp;
+                        const dateKey = new Date(timestamp).toISOString().split('T')[0];
+                        if (!groups[dateKey]) groups[dateKey] = [];
+                        groups[dateKey].push(file);
+                    } else {
+                        file.timestamp = Date.now();
+                        if (!groups['Lainnya']) groups['Lainnya'] = [];
+                        groups['Lainnya'].push(file);
+                    }
+                });
+
+                const sortedDates = Object.keys(groups).sort((a,b) => b.localeCompare(a));
+
+                sortedDates.forEach(dateKey => {
+                    const groupFiles = groups[dateKey];
+                    groupFiles.sort((a,b) => b.timestamp - a.timestamp);
+
+                    const section = document.createElement('section');
+                    section.className = 'date-section';
+
+                    const headerText = dateKey === 'Lainnya' ? 'Lainnya' : formatSectionDate(groupFiles[0].timestamp);
+                    section.innerHTML = `<div class="date-header">${headerText}</div>`;
+
+                    const grid = document.createElement('div');
+                    grid.className = 'gallery-grid';
+
+                    groupFiles.forEach(file => {
+                        allMediaFiles.push(file);
+                        const globalIndex = allMediaFiles.length - 1;
+
+                        const card = document.createElement('div');
+                        card.className = 'media-card';
+                        
+                        card.onclick = (e) => {
+                            const checkbox = card.querySelector('.gallery-checkbox');
+                            const checkedBoxes = document.querySelectorAll('.gallery-checkbox:checked');
+                            
+                            if (checkedBoxes.length > 0) {
+                                e.preventDefault();
+                                checkbox.checked = !checkbox.checked;
+                                handleGalleryCheckboxChange();
+                            } else {
+                                openLightbox(globalIndex);
+                            }
+                        };
+                        
+                        const isVideo = file.name.match(/\.(mp4|webm|ogg|mov)$/i);
+                        const fileUrl = `${API_BASE}${file.url}`;
+
+                        if (isVideo) {
+                            card.innerHTML = `<video src="${fileUrl}" muted></video>`;
+                        } else {
+                            card.innerHTML = `<img src="${fileUrl}" loading="lazy" alt="Media">`;
+                        }
+
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.className = 'gallery-checkbox';
+                        checkbox.setAttribute('data-filename', file.name);
+                        checkbox.setAttribute('data-path', file.relativePath);
+                        checkbox.onclick = (e) => e.stopPropagation();
+                        checkbox.onchange = () => handleGalleryCheckboxChange();
+                        card.appendChild(checkbox);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'grid-delete-btn';
+                        deleteBtn.innerText = '✕';
+                        deleteBtn.onclick = async (e) => {
+                            e.stopPropagation(); 
+                            if (confirm('Hapus file ini secara permanen dari server HOME-CLOUDE?')) {
+                                if (typeof showToast === 'function') showToast('Menghapus file dari server...', 'info');
+                                try {
+                                    const res = await fetch(`${API_BASE}/api/media/${file.name}?path=${encodeURIComponent(file.relativePath)}`, { 
+                                        method: 'DELETE',
+                                        headers: getAuthHeaders()
+                                    });
+                                    if (res.ok) {
+                                        if (typeof showToast === 'function') showToast('File berhasil dihapus!', 'success');
+                                        loadGallery();
+                                        if (typeof updateStorageInfo === 'function') updateStorageInfo();
+                                    } else {
+                                        if (typeof showToast === 'function') showToast('Gagal menghapus file.', 'error');
+                                    }
+                                } catch (err) { console.error(err); }
+                            }
+                        };
+
+                        card.appendChild(deleteBtn);
+                        grid.appendChild(card);
+                    });
+                    section.appendChild(grid);
+                    mainContainer.appendChild(section);
+                });
+            } catch (error) { console.error(error); }
+        }
+
+        // --- SISTEM PEMILIHAN DAN EKSEKUSI HAPUS MASSAL ---
+        function handleFileCheckboxChange() {
+            const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+            const actionHeader = document.getElementById('fileActionHeader');
+            const selectedCount = document.getElementById('selectedCount');
+            if (checkboxes.length > 0) {
+                if(actionHeader) actionHeader.style.display = 'flex';
+                if(selectedCount) selectedCount.innerText = checkboxes.length;
+            } else {
+                if(actionHeader) actionHeader.style.display = 'none';
+            }
+        }
+
+        async function deleteSelectedFiles() {
+            const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+            if (checkboxes.length === 0) return;
+            if (confirm(`Apakah Anda yakin ingin menghapus ${checkboxes.length} berkas dokumen ini secara permanen?`)) {
+                if (typeof showToast === 'function') showToast(`Menghapus ${checkboxes.length} berkas dari server...`, 'info');
+                let successCount = 0;
+                for (let i = 0; i < checkboxes.length; i++) {
+                    const relativePath = checkboxes[i].getAttribute('data-path');
+                    const fileName = checkboxes[i].getAttribute('data-filename');
+                    const targetParam = relativePath ? relativePath : fileName;
+                    try {
+                        // 🔄 SINKRONISASI BACKEND: Mengarahkan rute DELETE murni sesuai rute router.delete('/:filename')
+                        const res = await fetch(`${API_BASE}/api/media/${encodeURIComponent(fileName)}?path=${encodeURIComponent(targetParam)}`, { 
+                            method: 'DELETE', 
+                            headers: getAuthHeaders() 
+                        });
+                        if (res.ok) successCount++;
+                    } catch (err) { console.error(err); }
+                }
+                if (successCount > 0) {
+                    if (typeof showToast === 'function') showToast(`Sukses menghapus ${successCount} berkas dokumen!`, 'success');
+                } else {
+                    if (typeof showToast === 'function') showToast('Gagal menghapus berkas dokumen.', 'error');
+                }
+                loadGallery();
+                if (typeof updateStorageInfo === 'function') updateStorageInfo();
+            }
+        }
+
+        function handleGalleryCheckboxChange() {
+            const checkboxes = document.querySelectorAll('.gallery-checkbox:checked');
+            const actionHeader = document.getElementById('galleryActionHeader');
+            const selectedCount = document.getElementById('gallerySelectedCount');
+            if (checkboxes.length > 0) {
+                if(actionHeader) actionHeader.style.display = 'flex';
+                if(selectedCount) selectedCount.innerText = checkboxes.length;
+                document.body.classList.add('select-mode');
+            } else {
+                if(actionHeader) actionHeader.style.display = 'none';
+                document.body.classList.remove('select-mode');
+            }
+        }
+
+        async function deleteSelectedGalleryFiles() {
+            const checkboxes = document.querySelectorAll('.gallery-checkbox:checked');
+            if (checkboxes.length === 0) return;
+            if (confirm(`Apakah Anda yakin ingin menghapus ${checkboxes.length} item media terpilih ini secara permanen dari harddisk?`)) {
+                if (typeof showToast === 'function') showToast(`Menghapus ${checkboxes.length} item media dari server...`, 'info');
+                let successCount = 0;
+                for (let i = 0; i < checkboxes.length; i++) {
+                    const relativePath = checkboxes[i].getAttribute('data-path');
+                    const fileName = checkboxes[i].getAttribute('data-filename');
+                    const targetParam = relativePath ? relativePath : fileName;
+                    try {
+                        // 🔄 SINKRONISASI BACKEND: Mengarahkan rute DELETE murni sesuai rute router.delete('/:filename')
+                        const res = await fetch(`${API_BASE}/api/media/${encodeURIComponent(fileName)}?path=${encodeURIComponent(targetParam)}`, { 
+                            method: 'DELETE', 
+                            headers: getAuthHeaders() 
+                        });
+                        if (res.ok) successCount++;
+                    } catch (err) { console.error(err); }
+                }
+                if (successCount > 0) {
+                    if (typeof showToast === 'function') showToast(`Sukses menghapus ${successCount} media!`, 'success');
+                } else {
+                    if (typeof showToast === 'function') showToast('Gagal menghapus media.', 'error');
+                }
+                document.body.classList.remove('select-mode');
+                loadGallery();
+                if (typeof updateStorageInfo === 'function') updateStorageInfo();
+            }
+        }
+
+        // --- PREVIEW LIGHTBOX TUNGGAL SYSTEM ---
+        const lightbox = document.getElementById('lightbox');
+        const lightboxMediaContainer = document.getElementById('lightboxMediaContainer');
+        const lightboxDeleteBtn = document.getElementById('lightboxDeleteBtn');
+
+        function openLightbox(index) {
+            currentMediaIndex = index;
+            lightbox.style.display = 'flex';
+            renderLightboxMedia();
+        }
+
+        function closeLightbox() {
+            lightbox.style.display = 'none';
+            lightboxMediaContainer.innerHTML = '';
+        }
+
+        function renderLightboxMedia() {
+            const file = allMediaFiles[currentMediaIndex];
+            const fileUrl = `${API_BASE}${file.url}`;
+            const isVideo = file.name.match(/\.(mp4|webm|ogg|mov)$/i);
+
+            if (isVideo) {
+                lightboxMediaContainer.innerHTML = `<video src="${fileUrl}" class="lightbox-content" controls autoplay></video>`;
+            } else {
+                lightboxMediaContainer.innerHTML = `<img src="${fileUrl}" class="lightbox-content" alt="Pratinjau">`;
+            }
+
+            lightboxDeleteBtn.onclick = async () => {
+                if (confirm('Hapus file ini secara permanen dari server?')) {
+                    try {
+                        const res = await fetch(`${API_BASE}/api/media/${encodeURIComponent(file.name)}?path=${encodeURIComponent(file.relativePath)}`, { 
+                            method: 'DELETE', 
+                            headers: getAuthHeaders() 
+                        });
+                        if (res.ok) {
+                            closeLightbox();
+                            loadGallery();
+                        } else { alert('Gagal menghapus file.'); }
+                    } catch (err) { console.error(err); }
+                }
+            };
+        }
+
+               function changeMedia(direction) {
+            if(allMediaFiles.length <= 1) return;
+            currentMediaIndex += direction;
+            if (currentMediaIndex < 0) currentMediaIndex = allMediaFiles.length - 1;
+            if (currentMediaIndex >= allMediaFiles.length) currentMediaIndex = 0;
+            renderLightboxMedia();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (lightbox.style.display === 'flex') {
+                if (e.key === 'ArrowRight') changeMedia(1);
+                if (e.key === 'ArrowLeft') changeMedia(-1);
+                if (e.key === 'Escape') closeLightbox();
+            }
+        });
+
+        // --- SINKRONISASI UPLOAD MASSAL DENGAN PROGRESS INDIKATOR PERSENTASE ---
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (files.length === 0) return;
+
+            const toastId = 'upload-toast-' + Date.now();
+            showToast(`Mempersiapkan unggahan ${files.length} berkas...`, 'info', toastId);
+            
+            const barBox = document.getElementById(toastId + '-bar-box');
+            const barFill = document.getElementById(toastId + '-fill');
+            if(barBox) barBox.style.display = 'block';
+
+            let successCount = 0;
+
+            const uploadSingleFile = (file, index) => {
+                return new Promise((resolve) => {
+                    const xhr = new XMLHttpRequest();
+                    const formData = new FormData();
+                    formData.append('media', file);
+
+                    xhr.open('POST', `${API_BASE}/api/media/upload`, true);
+                    xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('cloud_token')}`);
+
+                    xhr.upload.onprogress = (event) => {
+                        if (event.lengthComputable) {
+                            const perFilePercent = Math.round((event.loaded / event.total) * 100);
+                            const msgText = document.querySelector(`#${toastId} .toast-msg-text`);
+                            if(msgText) {
+                                msgText.innerText = `Mengunggah (${index + 1}/${files.length}): ${file.name.substring(0, 15)}... [${perFilePercent}%]`;
+                            }
+                            if(barFill) barFill.style.width = `${perFilePercent}%`;
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status === 200) successCount++;
+                        resolve();
+                    };
+
+                    xhr.onerror = () => resolve();
+                    xhr.send(formData);
+                });
+            };
+
+            for (let i = 0; i < files.length; i++) {
+                await uploadSingleFile(files[i], i);
+            }
+
+            document.getElementById('fileInput').value = '';
+
+            if (successCount > 0) {
+                showToast(`Sukses mencadangkan ${successCount} berkas ke harddisk!`, 'success', toastId);
+            } else {
+                showToast('Gagal mencadangkan berkas ke server.', 'error', toastId);
+            }
+
+            loadGallery();
+            if (typeof updateStorageInfo === 'function') updateStorageInfo();
+        });
+
+        // --- FUNGSI GLOBAL UNDUH MASSAL TANPA BLOB ---
+        async function downloadSelectedGalleryFiles() {
+            const checkboxes = document.querySelectorAll('.gallery-checkbox:checked');
+            if (checkboxes.length === 0) return;
+
+            const toastId = 'download-bulk-toast-' + Date.now();
+            showToast(`Mempersiapkan unduhan massal ${checkboxes.length} berkas...`, 'info', toastId);
+
+            const token = localStorage.getItem('cloud_token');
+            let successCount = 0;
+
+            let downloadFrame = document.getElementById('hiddenDownloadFrame');
+            if (!downloadFrame) {
+                downloadFrame = document.createElement('iframe');
+                downloadFrame.id = 'hiddenDownloadFrame';
+                downloadFrame.style.display = 'none';
+                document.body.appendChild(downloadFrame);
+            }
+
+            for (let i = 0; i < checkboxes.length; i++) {
+                const relativePath = checkboxes[i].getAttribute('data-path');
+                const fileName = checkboxes[i].getAttribute('data-filename');
+                const targetParam = relativePath ? relativePath : fileName;
+                
+                const downloadUrl = `${API_BASE}/api/media/download/${encodeURIComponent(fileName)}?path=${encodeURIComponent(targetParam)}&token=${encodeURIComponent(token)}`;
+
+                const msgText = document.querySelector(`#${toastId} .toast-msg-text`);
+                if(msgText) {
+                    msgText.innerText = `Mengunduh (${i + 1}/${checkboxes.length}): ${fileName.substring(0, 15)}...`;
+                }
+
+                downloadFrame.src = downloadUrl;
+                successCount++;
+
+                if (i < checkboxes.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                }
+            }
+
+            if (successCount > 0) {
+                showToast(`Sukses memproses ${successCount} unduhan berkas langsung!`, 'success', toastId);
+            } else {
+                showToast('Gagal memproses unduhan berkas dari server.', 'error', toastId);
+            }
+
+            document.querySelectorAll('.gallery-checkbox').forEach(cb => cb.checked = false);
+            handleGalleryCheckboxChange();
+        }
+
+        // 🔄 KUNCI MUTLAK PENUTUP: Menyisipkan kembali kalkulator biner berkas dan tag penutup dokumen HTML
+        function formatFileSize(bytes) {
+            if (!bytes || isNaN(bytes)) return '0 Bytes';
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
+
