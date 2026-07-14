@@ -29,7 +29,7 @@ sudo npm install -y pm2 -g
 echo -e "\n${COLOR_CYAN}[4/6] Mengunduh source code HOME-CLOUDE dari GitHub...${COLOR_RESET}"
 cd ~
 rm -rf home-cloud-server 
-git clone https://github.com/csrainbow/home-cloude-server.git home-cloud-server
+git clone https://github.com home-cloud-server
 
 # 5. Instalasi Seluruh Modul Dependensi Node.js
 echo -e "\n${COLOR_CYAN}[5/6] Memasang modul Node.js dan pustaka pendukung...${COLOR_RESET}"
